@@ -4,7 +4,8 @@ namespace Drupal\propel\Drush\Commands;
 
 use Drush\Commands\DrushCommands;
 use Drupal\Core\Serialization\Yaml;
-use Symfony\Component\HttpClient\HttpClient;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Response;
 use Symfony\Component\Filesystem\Filesystem;
 
 /**
@@ -12,23 +13,39 @@ use Symfony\Component\Filesystem\Filesystem;
  */
 class PropelCommands extends DrushCommands {
 
-  private $api_url = "https://api.github.com/repos/elevatedthird/propel-components";
+  protected $api_url = "https://api.github.com/repos/elevatedthird/propel-components";
+
+  protected $client = NULL;
 
   protected $component_list = [];
+
+  public function __construct() {
+    parent::__construct();
+    $this->client = new Client([
+      'headers' => [
+        'Accept' => 'application/vnd.github+json',
+        'X-GitHub-Api-Version' => '2022-11-28'
+      ]
+    ]);
+    $this->getSDCList();
+  }
 
   /**
    * Get the list of components from the propel-components repo.
    */
   protected function getSDCList() {
-    $client = HttpClient::create();
-    $response = $client->request('GET', $this->api_url . "/git/trees/main?recursive=1");
-    $status = $response->getStatusCode();
-    if ($status !== 200) {
+    $response = $this->client->request('GET', $this->api_url . "/git/trees/main?recursive=1");
+    if ($response instanceof Response) {
+      $status = $response->getStatusCode();
+      if ($status !== 200) {
+        throw new \Exception("Error: Could not get component list from propel-components repo.");
+      }
+      $body = $response->getBody();
+      $body = json_decode($body->getContents(), TRUE);
+      $this->component_list = $body['tree'];
+    } else {
       throw new \Exception("Error: Could not get component list from propel-components repo.");
     }
-    $response = $response->toArray();
-    $this->component_list = $response['tree'];
-    // dump($response); die;
   }
 
   /**
@@ -38,21 +55,21 @@ class PropelCommands extends DrushCommands {
     if (empty($component_path)) {
       throw new \Exception("Error: No component path provided.");
     }
-    $client = HttpClient::create();
     $fs = new Filesystem();
     $theme_path = \Drupal::service('extension.list.theme')->getPath('kinetic');
     // Check if this folder exists in the theme.
-    $destination = "{$theme_path}/components/{$component_path}";
+    $destination = "{$theme_path}/{$component_path}";
     if ($fs->exists($destination)) {
       $this->output()->writeln("Component already exists at: {$component_path}.");
     }
     // Attempt to download the component and all it's files into the theme.
     $content_url = $this->api_url . "/contents/{$component_path}"; ;
-    $content = $client->request('GET', $content_url);
-    if ($content->getStatusCode() !== 200) {
+    $response = $this->client->request('GET', $content_url);
+    if ($response->getStatusCode() !== 200) {
       throw new \Exception("Error: Could not download component from URL {$content_url}.");
     }
-    $content = $content->toArray();
+    $content = $response->getBody();
+    $content = json_decode($content->getContents(), TRUE);
     $component_yaml_file_path = '';
     foreach ($content as $file) {
       $file_name = $destination . '/' . $file['name'];
@@ -100,7 +117,9 @@ class PropelCommands extends DrushCommands {
    *   Adds a Propel component.
    */
   public function add($name = '') {
-    $this->getSDCList();
+    if (empty($name)) {
+      throw new \Exception("Error: No component name provided.");
+    }
     $component_path = $this->getSDCPath($name);
     $this->downloadSDC($component_path);
     $this->output()->writeln('Added propel component: ' . $name);
