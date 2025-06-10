@@ -1,5 +1,5 @@
 name: 'Propel'
 type: module
 description: 'Provides Drush commands for Propel.'
-core_version_requirement: ^10
+core_version_requirement: ^10 || ^11
 package: Custom
