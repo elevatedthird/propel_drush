@@ -1,0 +1,4 @@
+services:
+  propel.components_manager:
+    class: Drupal\propel\PropelComponentsManager
+    arguments: []

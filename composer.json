@@ -1,0 +1,13 @@
+{
+  "name": "elevatedthird/propel-drush",
+  "type": "drupal-module",
+  "description": "Contains a drush command to download SDCs.",
+  "keywords": ["Drupal"],
+  "license": "GPL-2.0+",
+  "homepage": "https://github.com/elevatedthird/paragon_propel",
+  "minimum-stability": "stable",
+  "require": {
+    "drupal/core": "^10.4 || >=11.1",
+    "drush/drush": ">= 12.0"
+  }
+}
