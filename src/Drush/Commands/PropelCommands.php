@@ -2,6 +2,7 @@
 
 namespace Drupal\propel\Drush\Commands;
 
+use Drush\Commands\DrushCommands;
 use Drupal\propel\PropelComponentsManager;
 
 /**
