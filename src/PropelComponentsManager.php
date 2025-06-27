@@ -2,7 +2,7 @@
 
 namespace Drupal\propel;
 
-use Drush\Commands\DrushCommands;
+use Drupal\Core\Logger\RfcLogLevel as LogLevel;
 use Drupal\Core\Serialization\Yaml;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
@@ -55,7 +55,7 @@ class PropelComponentsManager {
     // Check if this folder exists in the theme.
     $destination = "{$theme_path}/{$component_path}";
     if ($fs->exists($destination)) {
-      \Drupal::logger('propel')->warn("Component already exists at: {$component_path}.");
+      \Drupal::logger('propel')->log(LogLevel::WARNING, "Component already exists at: {$component_path}.");
     }
     // Attempt to download the component and all it's files into the theme.
     $content_url = $this->api_url . "/contents/{$component_path}"; ;
@@ -77,7 +77,7 @@ class PropelComponentsManager {
     $component_yaml = Yaml::decode(file_get_contents($component_yaml_file_path)) ?? [];
     if (isset($component_yaml['needs']) && gettype($component_yaml['needs']) === 'array') {
       foreach ($component_yaml['needs'] as $dependency) {
-        $this->output()->writeln("Adding SDC dependency: {$dependency}");
+        \Drupal::logger('propel')->log(LogLevel::INFO, "Adding SDC dependency: {$dependency}");
         $path = $this->getSDCPath($dependency);
         if (!empty($path)) {
           $this->downloadSDC($path);
