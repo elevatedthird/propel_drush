@@ -3,5 +3,6 @@ A drush command that downloads a SDC from the [propel-components](https://github
 
 ## Usage
 ```
+drush pm:enable propel
 propel:add [SDC_NAME]
 ```
