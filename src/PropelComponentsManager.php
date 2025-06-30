@@ -55,8 +55,10 @@ class PropelComponentsManager {
     $theme_path = \Drupal::service('extension.list.theme')->getPath('kinetic');
     // Check if this folder exists in the theme.
     $destination = "{$theme_path}/{$component_path}";
+    $exists = FALSE;
     if ($fs->exists($destination)) {
       \Drupal::logger('propel')->log(LogLevel::WARNING, "Component already exists at: {$component_path}.");
+      $exists = TRUE;
     }
     // Attempt to download the component and all it's files into the theme.
     $content_url = $this->api_url . "/contents/{$component_path}"; ;
@@ -67,9 +69,12 @@ class PropelComponentsManager {
     $content = $response->getBody();
     $content = json_decode($content->getContents(), TRUE);
     $component_yaml_file_path = '';
+    // Loop through all files in the folder.
     foreach ($content as $file) {
       $file_name = $destination . '/' . $file['name'];
-      $fs->dumpFile($file_name, file_get_contents($file['download_url']));
+      if (!$exists) {
+        $fs->dumpFile($file_name, file_get_contents($file['download_url']));
+      }
       if (str_ends_with($file_name, 'component.yml')) {
         $component_yaml_file_path = $file_name;
       }
