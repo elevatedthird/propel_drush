@@ -10,6 +10,7 @@ use Symfony\Component\Filesystem\Filesystem;
 
 class PropelComponentsManager {
   protected $api_url = "https://api.github.com/repos/elevatedthird/propel-components";
+  protected $raw_url = "https://raw.githubusercontent.com/elevatedthird/propel-components";
 
   protected $client = NULL;
 
@@ -102,5 +103,27 @@ class PropelComponentsManager {
       throw new \Exception("Error: Could not find component: {$name}.");
     }
     return $sdc;
+  }
+
+  /**
+   * Download index.pcss.css from Propel Components.
+   */
+  public function downloadStylesheet() {
+    $fs = new Filesystem();
+    $theme_path = \Drupal::service('extension.list.theme')->getPath('kinetic');
+    // Check if this file already exists.
+    $destination = "{$theme_path}/source/01-base/global/css/index.pcss.css";
+    if ($fs->exists($destination)) {
+      \Drupal::logger('propel')->log(LogLevel::WARNING, "Base stylesheet already exists, exiting.");
+      return;
+    }
+    // Attempt to download the Base Stylesheet.
+    $content_url = $this->raw_url . "/main/01-base/global/css/index.pcss.css";
+    try {
+      $fs->dumpFile($destination, file_get_contents($content_url));
+    } catch (\Exception $e) {
+      throw new \Exception("Could not download stylesheet from URL {$content_url}." . $e->getMessage());
+    }
+    \Drupal::logger('propel')->log(LogLevel::INFO, "Downloaded base stylesheet to {$destination}.");
   }
 }
