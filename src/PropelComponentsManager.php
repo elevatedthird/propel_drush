@@ -140,9 +140,7 @@ class PropelComponentsManager implements LoggerAwareInterface {
     $stylesheets = array_merge($stylesheets, json_decode($response->getBody()->getContents(), TRUE));
     try {
       foreach ($stylesheets as $file) {
-        if (!$exists) {
-          $fs->dumpFile("{$theme_path}/source/{$file['path']}", file_get_contents($file['download_url']));
-        }
+        $fs->dumpFile("{$theme_path}/source/{$file['path']}", file_get_contents($file['download_url']));
       }
       $this->logger->success("Downloaded general stylesheets to {$theme_path}/source/01-base/global/css");
     }
