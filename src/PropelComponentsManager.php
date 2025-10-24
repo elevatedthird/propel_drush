@@ -14,7 +14,6 @@ class PropelComponentsManager implements LoggerAwareInterface {
   use LoggerAwareTrait;
 
   protected $api_url = "https://api.github.com/repos/elevatedthird/propel-components";
-  protected $raw_url = "https://raw.githubusercontent.com/elevatedthird/propel-components";
 
   protected $client = NULL;
 
@@ -118,22 +117,37 @@ class PropelComponentsManager implements LoggerAwareInterface {
   /**
    * Download index.pcss.css from Propel Components.
    */
-  public function downloadStylesheet() {
+  public function downloadStylesheets() {
     $fs = new Filesystem();
     $theme_path = \Drupal::service('extension.list.theme')->getPath('kinetic');
     // Check if this file already exists.
-    $destination = "{$theme_path}/source/01-base/global/css/index.pcss.css";
-    if ($fs->exists($destination)) {
+    if ($fs->exists("{$theme_path}/source/01-base/global/css/index.pcss.css")) {
       $this->logger->warning("Base stylesheet already exists, exiting.");
       return;
     }
+    $stylesheets = [];
     // Attempt to download the Base Stylesheet.
-    $content_url = $this->raw_url . "/main/01-base/global/css/index.pcss.css";
-    try {
-      $fs->dumpFile($destination, file_get_contents($content_url));
-    } catch (\Exception $e) {
-      throw new \Exception("Could not download stylesheet from URL {$content_url}." . $e->getMessage());
+    $index_css = $this->client->request('GET', $this->api_url . "/contents/01-base/global/css/index.pcss.css");
+    if ($index_css->getStatusCode() !== 200) {
+      throw new \Exception("Error: Could not reach index.pcss.css from URL");
     }
-    $this->logger->success("Downloaded base stylesheet to {$destination}.");
+    $stylesheets[] = json_decode($index_css->getBody()->getContents(), TRUE);
+    // Download all other general stylesheet files.
+    $response = $this->client->request('GET', $this->api_url . "/contents/01-base/global/css/general");
+    if ($response->getStatusCode() !== 200) {
+      throw new \Exception("Error: Could not reach general stylesheets from URL");
+    }
+    $stylesheets = array_merge($stylesheets, json_decode($response->getBody()->getContents(), TRUE));
+    try {
+      foreach ($stylesheets as $file) {
+        if (!$exists) {
+          $fs->dumpFile("{$theme_path}/source/{$file['path']}", file_get_contents($file['download_url']));
+        }
+      }
+      $this->logger->success("Downloaded general stylesheets to {$theme_path}/source/01-base/global/css");
+    }
+    catch (\Exception $e) {
+      throw new \Exception("Error: Could not download general stylesheets from URL");
+    }
   }
 }

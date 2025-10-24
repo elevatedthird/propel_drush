@@ -17,7 +17,7 @@ Add to your composer.json's `repositories` key
 # Install Propel
 drush pm:enable propel
 
-# Download the base styleshet
+# Download the base stylesheet and all starter SDCs
 propel:init
 
 # Add an SDC from Prpel Components to your project

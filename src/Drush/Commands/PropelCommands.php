@@ -68,7 +68,7 @@ class PropelCommands extends DrushCommands {
    * @command propel:init
    */
   public function init() {
-    $this->propelComponentsManager->downloadStylesheet();
+    $this->propelComponentsManager->downloadStylesheets();
     $starter_components = [
       'accordion',
       'billboard',
@@ -76,9 +76,11 @@ class PropelCommands extends DrushCommands {
       'carousel',
       'header',
       'hero-banner',
+      'layout--one-column',
+      'layout--two-column',
+      'layout--content-header',
       'footer',
       'form',
-      'section',
       'section-intro',
       'tabs',
       'text-and-media'
