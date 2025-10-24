@@ -6,9 +6,13 @@ use Drupal\Core\Logger\RfcLogLevel as LogLevel;
 use Drupal\Core\Serialization\Yaml;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\Filesystem\Filesystem;
 
-class PropelComponentsManager {
+class PropelComponentsManager implements LoggerAwareInterface {
+  use LoggerAwareTrait;
+
   protected $api_url = "https://api.github.com/repos/elevatedthird/propel-components";
   protected $raw_url = "https://raw.githubusercontent.com/elevatedthird/propel-components";
 
@@ -45,7 +49,7 @@ class PropelComponentsManager {
   }
 
   /**
-   * Download a single SDC component.
+   * Download a single SDC component and all its dependencies.
    */
   public function downloadSDC(string $component_path) {
     if (empty($component_path)) {
@@ -57,7 +61,7 @@ class PropelComponentsManager {
     $destination = "{$theme_path}/{$component_path}";
     $exists = FALSE;
     if ($fs->exists($destination)) {
-      \Drupal::logger('propel')->log(LogLevel::WARNING, "Component already exists at: {$component_path}.");
+      $this->logger->warning("Component already exists at: {$component_path}.");
       $exists = TRUE;
     }
     // Attempt to download the component and all it's files into the theme.
@@ -79,11 +83,12 @@ class PropelComponentsManager {
         $component_yaml_file_path = $file_name;
       }
     }
+    $sdc_name = basename($component_path);
+    $this->logger->success("Adding SDC: {$sdc_name}");
     // Check for dependencies.
     $component_yaml = Yaml::decode(file_get_contents($component_yaml_file_path)) ?? [];
     if (isset($component_yaml['needs']) && gettype($component_yaml['needs']) === 'array') {
       foreach ($component_yaml['needs'] as $dependency) {
-        \Drupal::logger('propel')->log(LogLevel::INFO, "Adding SDC dependency: {$dependency}");
         $path = $this->getSDCPath($dependency);
         if (!empty($path)) {
           $this->downloadSDC($path);
@@ -119,7 +124,7 @@ class PropelComponentsManager {
     // Check if this file already exists.
     $destination = "{$theme_path}/source/01-base/global/css/index.pcss.css";
     if ($fs->exists($destination)) {
-      \Drupal::logger('propel')->log(LogLevel::WARNING, "Base stylesheet already exists, exiting.");
+      $this->logger->warning("Base stylesheet already exists, exiting.");
       return;
     }
     // Attempt to download the Base Stylesheet.
@@ -129,6 +134,6 @@ class PropelComponentsManager {
     } catch (\Exception $e) {
       throw new \Exception("Could not download stylesheet from URL {$content_url}." . $e->getMessage());
     }
-    \Drupal::logger('propel')->log(LogLevel::INFO, "Downloaded base stylesheet to {$destination}.");
+    $this->logger->success("Downloaded base stylesheet to {$destination}.");
   }
 }
